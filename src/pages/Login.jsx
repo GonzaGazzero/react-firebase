@@ -1,14 +1,22 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { login } from "../config/firebase";
+import { useUserContext } from "../context/UserContext";
+import { useNavigate } from "react-router-dom";
+
 
 const Login = () => {
 
-    const [email, setEmail] = useState("")
-    const [password, setPassword] = useState("")
+    const [email, setEmail] = useState("");
+    const [password, setPassword] = useState("");
+    const { user } = useUserContext();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (user) navigate("/dashboard");
+      }, [user]);
 
     const handleSubmit = async (e) => {
         e.preventDefault()
-        console.log("submit")
         try {
             const credentialUser = await login({ email, password });
             console.log(credentialUser);
