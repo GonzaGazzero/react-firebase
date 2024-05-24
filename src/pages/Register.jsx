@@ -1,36 +1,131 @@
-import { useState } from "react";
+import { Formik } from "formik";
+import * as Yup from "yup";
 import { register } from "../config/firebase";
-import { useRedirectActiveUser } from "../hooks/useRedirectActiveUser";
 import { useUserContext } from "../context/UserContext";
+import { useRedirectActiveUser } from "../hooks/useRedirectActiveUser";
+
+import { Avatar, Box, Button, TextField, Typography } from "@mui/material";
+import { LoadingButton } from "@mui/lab";
+import { Link } from "react-router-dom";
+import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 
 const Register = () => {
-    const [email, setEmail] = useState("")
-    const [password, setPassword] = useState("")
+    const { user } = useUserContext();
 
-    const {user} = useUserContext()
+    // alternativa con hook
     useRedirectActiveUser(user, "/dashboard");
 
-    const handleSubmit = async (e) => {
-        e.preventDefault()
+    const onSubmit = async (
+        { email, password },
+        { setSubmitting, setErrors, resetForm }
+    ) => {
         try {
-            const credentialUser = await register({ email, password });
-            console.log(credentialUser);
+            await register({ email, password });
+            console.log("user registered");
+            resetForm();
+        } catch (error) {
+            console.log(error.code);
+            console.log(error.message);
+            if (error.code === "auth/email-already-in-use") {
+                setErrors({ email: "Email already in use" });
+            }
+        } finally {
+            setSubmitting(false);
         }
-        catch (error) {
-            console.log(error);
-        }
-    }
+    };
+
+    const validationSchema = Yup.object().shape({
+        email: Yup.string().email().required(),
+        password: Yup.string().trim().min(6).required(),
+    });
 
     return (
-        <>
-            <h1>Register</h1>
-            <form onSubmit={handleSubmit}>
-                <input type="text" placeholder="Ingrese email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                <input type="password" placeholder="Ingrese constraseña" value={password} onChange={(e) => setPassword(e.target.value)} />
-                <button type="submit">Register</button>
-            </form>
-        </>
-    )
+        <Box sx={{ mt: 8, maxWidth: 400, mx: "auto", textAlign: "center" }}>
+            <Avatar sx={{ mx: "auto", bgcolor: "#444" }}>
+                <LockOutlinedIcon />
+            </Avatar>
+
+            <Typography
+                component="h1"
+                variant="h5"
+            >
+                Registrarse
+            </Typography>
+
+            <Formik
+                initialValues={{ email: "", password: "" }}
+                onSubmit={onSubmit}
+                validationSchema={validationSchema}
+            >
+                {({
+                    handleSubmit,
+                    handleChange,
+                    values,
+                    isSubmitting,
+                    errors,
+                    touched,
+                    handleBlur,
+                }) => (
+                    <Box
+                        onSubmit={handleSubmit}
+                        component="form"
+                        sx={{ mt: 1 }}
+                    >
+                        <TextField
+                            type="text"
+                            label="Ingrese email"
+                            value={values.email}
+                            onChange={handleChange}
+                            name="email"
+                            fullWidth
+                            sx={{ mb: 3 }}
+                            id="email"
+                            placeholder="test@example.com"
+                            onBlur={handleBlur}
+                            error={errors.email && touched.email}
+                            helperText={errors.email && touched.email && errors.email}
+                        />
+
+                        <TextField
+                            type="password"
+                            placeholder="Ingrese contraseña"
+                            value={values.password}
+                            onChange={handleChange}
+                            name="password"
+                            onBlur={handleBlur}
+                            id="password"
+                            label="Ingrese contraseña"
+                            fullWidth
+                            sx={{ mb: 3 }}
+                            error={errors.password && touched.password}
+                            helperText={
+                                errors.password && touched.password && errors.password
+                            }
+                        />
+
+                        <LoadingButton
+                            type="submit"
+                            disabled={isSubmitting}
+                            loading={isSubmitting}
+                            variant="contained"
+                            fullWidth
+                            sx={{ mb: 3 }}
+                        >
+                            Registrarse
+                        </LoadingButton>
+
+                        <Button
+                            component={Link}
+                            to="/"
+                            fullWidth
+                        >
+                            ¿Ya tienes cuenta? Ingresa
+                        </Button>
+                    </Box>
+                )}
+            </Formik>
+        </Box>
+    );
 };
 
 export default Register;
